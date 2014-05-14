@@ -21,7 +21,7 @@
 */
 
 package com.codinguser.android.contactpicker;
-
+ 
 import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
