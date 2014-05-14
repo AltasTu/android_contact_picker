@@ -40,6 +40,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AlphabetIndexer;
+import android.widget.EditText;
 import android.widget.ListView;
 import android.widget.SectionIndexer;
 
@@ -49,6 +50,7 @@ public class ContactsListFragment extends ListFragment implements
 	private OnContactSelectedListener mContactsListener;
 	private SimpleCursorAdapter mAdapter;
 	private String mCurrentFilter = null;
+	private EditText mSearchEditText;
 	
 	private static final String[] CONTACTS_SUMMARY_PROJECTION = new String[] {
 			Contacts._ID, 
@@ -80,6 +82,33 @@ public class ContactsListFragment extends ListFragment implements
 		setListAdapter(mAdapter);
 		getListView().setFastScrollEnabled(true);
 		
+		mSearchEditText = (EditText) getActivity().findViewById(R.id.search_edittext);
+		mSearchEditText.addTextChangedListener(mtextWatcher);
+	}
+	
+	private TextWatcher mtextWatcher = new TextWatcher() {  
+         
+	        @Override    
+	        public void afterTextChanged(Editable s) {     
+	        }   
+	          
+	        @Override 
+	        public void beforeTextChanged(CharSequence s, int start, int count,  
+	                int after) {  
+	        }  
+	 
+	         @Override    
+	        public void onTextChanged(CharSequence s, int start, int before,     
+	                int count) {
+	        	
+	        	 search();          
+	        }                    
+	    }; 
+	    
+	 private void search() {
+		Bundle bundle = new Bundle(1);
+		bundle.putString("keyword", mSearchEditText.getText().toString());
+		getLoaderManager().restartLoader(0, bundle, this);
 	}
 	
 	@Override
@@ -132,13 +161,27 @@ public class ContactsListFragment extends ListFragment implements
             baseUri = Contacts.CONTENT_URI;
         }
 		
-		String selection = "((" + Contacts.DISPLAY_NAME + " NOTNULL) AND ("
-	            + Contacts.HAS_PHONE_NUMBER + "=1) AND ("
-	            + Contacts.DISPLAY_NAME + " != '' ))";
-		
-		String sortOrder = ContactsContract.Contacts.DISPLAY_NAME + " COLLATE LOCALIZED ASC";
-		
-		return new CursorLoader(getActivity(), baseUri, CONTACTS_SUMMARY_PROJECTION, selection, null, sortOrder);
+	String selection = null;
+		String[] selectionArgs = null;
+		if (null == arg1) {
+			selection = "((" + Contacts.DISPLAY_NAME + " NOTNULL) AND ("
+					+ Contacts.HAS_PHONE_NUMBER + "=1) AND ("
+					+ Contacts.DISPLAY_NAME + " != '' ))";
+		} else {
+			selection = "(sort_key LIKE ? OR " + Contacts.DISPLAY_NAME
+					+ " LIKE ? ) AND " + "((" + Contacts.DISPLAY_NAME
+					+ " NOTNULL) AND (" + Contacts.HAS_PHONE_NUMBER
+					+ "=1) AND (" + Contacts.DISPLAY_NAME + " != '' ))";
+			selectionArgs = new String[] {
+					"%" + arg1.getString("keyword") + "%",
+					"%" + arg1.getString("keyword") + "%" };
+		}
+		String sortOrder = ContactsContract.Contacts.DISPLAY_NAME
+				+ " COLLATE LOCALIZED ASC";
+
+		return new CursorLoader(getActivity(), baseUri,
+				CONTACTS_SUMMARY_PROJECTION, selection, selectionArgs,
+				sortOrder);
 	}
 	
 	@Override
